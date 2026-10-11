@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Flow | Soluciones RyJ</title>
+  <meta name="description" content="Genera códigos QR de forma individual o masiva mediante archivos CSV. Personaliza colores, tamaños y descarga como PNG, SVG o en un archivo comprimido ZIP.">
+  
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css?v=2.1">
+</head>
+<body>
+
+  <!-- Layout Container -->
+  <div class="app-container no-print">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i class="fa-solid fa-qrcode fa-spin-hover"></i>
+        </div>
+        <div class="logo-text">
+          <h1>QR<span>Flow</span></h1>
+          <p>Soluciones RyJ | Generador de Códigos QR</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <!-- Logs / Error Diagnostics Button -->
+        <button id="btn-open-logs" class="btn-icon" title="Ver Historial de Envíos y Diagnóstico de Errores" style="position: relative;">
+          <i class="fa-solid fa-clipboard-list"></i>
+          <span id="log-error-badge" class="badge-counter" style="display: none;">0</span>
+        </button>
+
+        <!-- SMTP Server Connection Badge -->
+        <button id="smtp-status-btn" class="smtp-status-badge status-checking" title="Estado del servidor de correos (Clic para ver detalles)">
+          <span class="status-dot"></span>
+          <span class="status-text" id="smtp-status-text">Detectando servidor...</span>
+        </button>
+
+        <!-- Theme Toggle Switch -->
+        <button id="theme-toggle" class="btn-icon" aria-label="Cambiar tema visual" title="Alternar Modo Oscuro/Claro">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="app-nav">
+      <button class="nav-tab active" data-tab="tab-single">
+        <i class="fa-solid fa-square-rss"></i> Generador Individual
+      </button>
+      <button class="nav-tab" data-tab="tab-batch">
+        <i class="fa-solid fa-file-csv"></i> Carga Masiva (CSV)
+      </button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="app-content">
+
+      <!-- Panel 1: Single QR Generator -->
+      <section id="tab-single" class="tab-panel active">
+        <div class="grid-two-columns">
+          
+          <!-- Controls Column -->
+          <div class="card card-controls">
+            <h2 class="card-title"><i class="fa-solid fa-sliders text-primary"></i> Configuración del QR</h2>
+            
+            <div class="form-group">
+              <label for="single-input">Contenido del QR</label>
+              <textarea id="single-input" placeholder="Escribe el texto, enlace (URL) o número a codificar..." rows="4"></textarea>
+              <div class="input-counter"><span id="char-count">0</span> caracteres</div>
+            </div>
+
+            <div class="accordion-header" id="adv-settings-toggle">
+              <span><i class="fa-solid fa-cog"></i> Opciones Personalizadas</span>
+              <i class="fa-solid fa-chevron-down arrow-icon"></i>
+            </div>
+            
+            <div class="accordion-content" id="adv-settings-content">
+              <div class="grid-two-inputs">
+                <div class="form-group">
+                  <label for="color-dark">Color del Código</label>
+                  <div class="color-picker-wrapper">
+                    <input type="color" id="color-dark" value="#000000">
+                    <input type="text" id="color-dark-hex" value="#000000" maxlength="7">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="color-light">Color de Fondo</label>
+                  <div class="color-picker-wrapper">
+                    <input type="color" id="color-light" value="#ffffff">
+                    <input type="text" id="color-light-hex" value="#ffffff" maxlength="7">
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid-two-inputs">
+                <div class="form-group">
+                  <label for="qr-ecc">Corrección de Errores</label>
+                  <select id="qr-ecc">
+                    <option value="L">L - Baja (7%)</option>
+                    <option value="M" selected>M - Media (15%)</option>
+                    <option value="Q">Q - Alta (25%)</option>
+                    <option value="H">H - Completa (30%)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="qr-margin">Margen (Silencio)</label>
+                  <div class="range-wrapper">
+                    <input type="range" id="qr-margin" min="0" max="10" value="4">
+                    <span id="margin-val">4px</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="qr-size">Tamaño de Exportación</label>
+                <select id="qr-size">
+                  <option value="256">Pequeño (256 x 256 px)</option>
+                  <option value="512" selected>Mediano (512 x 512 px)</option>
+                  <option value="1024">Grande (1024 x 1024 px)</option>
+                  <option value="2048">Ultra HD (2048 x 2048 px)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Email Delivery Settings for Single QR -->
+            <div class="accordion-header active" id="single-mail-toggle" style="margin-top: 1rem;">
+              <span><i class="fa-solid fa-paper-plane text-primary"></i> Envío por Correo (SMTP)</span>
+              <i class="fa-solid fa-chevron-down arrow-icon"></i>
+            </div>
+            <div class="accordion-content show" id="single-mail-content">
+              <div class="grid-two-inputs">
+                <div class="form-group">
+                  <label for="single-emp-name">Nombre del Colaborador</label>
+                  <input type="text" id="single-emp-name" placeholder="Ej. Juan Pérez">
+                </div>
+                <div class="form-group">
+                  <label for="single-emp-id">No. de Empleado</label>
+                  <input type="text" id="single-emp-id" placeholder="Ej. 1001">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="single-emp-email">Correo Electrónico del Destinatario <span class="required">*</span></label>
+                <input type="email" id="single-emp-email" placeholder="ejemplo@multiva.com.mx">
+              </div>
+              <div class="form-group" style="margin-top: 0.5rem;">
+                <label class="custom-toggle-inline" style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.85rem; font-weight: 500;">
+                  <input type="checkbox" id="single-auto-send">
+                  <span><i class="fa-solid fa-paper-plane text-primary"></i> Enviar correo automáticamente al terminar de generar el QR</span>
+                </label>
+              </div>
+              <div class="email-hint-box">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Se enviará usando la plantilla oficial de Comedor Gilou configurada en <code>config/smtp_config.json</code>.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Column -->
+          <div class="card card-preview">
+            <h2 class="card-title text-center"><i class="fa-solid fa-eye text-primary"></i> Previsualización</h2>
+            
+            <div class="qr-preview-container">
+              <div id="single-qr-output" class="qr-output-box">
+                <!-- Fallback / Placeholder state -->
+                <div class="qr-placeholder" id="single-placeholder">
+                  <i class="fa-solid fa-qrcode placeholder-icon"></i>
+                  <p>Escribe algo en el panel de la izquierda para generar tu código QR dinámicamente</p>
+                </div>
+                <!-- Dynamic canvas generated by library -->
+                <canvas id="single-qr-canvas" style="display: none;"></canvas>
+              </div>
+            </div>
+
+            <!-- Action buttons (disabled initially) -->
+            <div class="preview-actions" id="single-actions" style="opacity: 0.5; pointer-events: none;">
+              <button id="btn-copy-qr" class="btn btn-secondary" title="Copiar al portapapeles">
+                <i class="fa-solid fa-copy"></i> Copiar
+              </button>
+              <button id="btn-download-png" class="btn btn-outline" title="Descargar imagen PNG">
+                <i class="fa-solid fa-download"></i> PNG
+              </button>
+              <button id="btn-preview-email" class="btn btn-outline" title="Ver cómo se verá el correo antes de enviar">
+                <i class="fa-solid fa-eye"></i> Ver Correo
+              </button>
+              <button id="btn-single-send-email" class="btn btn-primary" title="Enviar correo con QR al colaborador">
+                <i class="fa-solid fa-paper-plane"></i> Enviar Correo
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Panel 2: Batch QR Generator (CSV) -->
+      <section id="tab-batch" class="tab-panel">
+        
+        <!-- Drag and Drop Zone (Uses native HTML label behavior for bulletproof file selection) -->
+        <label class="card drag-drop-card" id="drop-zone" for="csv-file-input">
+          <input type="file" id="csv-file-input" accept=".csv,.CSV,.txt,.TXT" class="file-input-hidden">
+          <div class="drag-drop-content">
+            <i class="fa-solid fa-cloud-arrow-up drag-icon"></i>
+            <h3>Haz clic para seleccionar tu archivo CSV</h3>
+            <p>o arrástralo y suéltalo dentro de esta área</p>
+            <span class="file-limits">Estructura requerida: 3 columnas (<code>num_empleado</code>, <code>nombre</code>, <code>correo</code>). Admite comas o punto y coma.</span>
+          </div>
+        </label>
+
+        <!-- File details and Column Mapping (Hidden initially) -->
+        <div class="card card-mapping" id="mapping-card" style="display: none;">
+          <div class="card-header-flex">
+            <h2 class="card-title"><i class="fa-solid fa-table-list text-primary"></i> Configuración de Datos (CSV)</h2>
+            <button id="btn-reset-csv" class="btn btn-outline btn-sm"><i class="fa-solid fa-rotate-left"></i> Cambiar Archivo</button>
+          </div>
+          
+          <div class="file-info-badge" id="file-info-text">
+            <i class="fa-solid fa-file-csv"></i> archivo.csv
+          </div>
+
+          <!-- Mini Vista Previa de Filas CSV -->
+          <div id="csv-preview-container" style="display: none; margin: 1rem 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 0.75rem 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">
+              <span><i class="fa-solid fa-table"></i> Vista Previa de Datos Detectados:</span>
+              <span id="csv-preview-badge" style="background: var(--primary-soft); color: var(--primary); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: 600;">3 columnas</span>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="csv-preview-table" id="csv-preview-table">
+                <thead id="csv-preview-thead"></thead>
+                <tbody id="csv-preview-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="grid-three-inputs">
+            <!-- QR Data Column Selector -->
+            <div class="form-group">
+              <label for="csv-col-data">Columna de Datos (Contenido QR) <span class="required">*</span></label>
+              <select id="csv-col-data">
+                <option value="">Seleccionar columna...</option>
+              </select>
+            </div>
+            
+            <!-- QR Filename Column Selector -->
+            <div class="form-group">
+              <label for="csv-col-filename">Columna de Nombre de Archivo (Opcional)</label>
+              <select id="csv-col-filename">
+                <option value="">-- Usar número consecutivo --</option>
+              </select>
+            </div>
+
+            <!-- Error Correction Level for Batch -->
+            <div class="form-group">
+              <label for="batch-qr-ecc">Corrección de Errores</label>
+              <select id="batch-qr-ecc">
+                <option value="L">L - Baja (7%)</option>
+                <option value="M" selected>M - Media (15%)</option>
+                <option value="Q">Q - Alta (25%)</option>
+                <option value="H">H - Completa (30%)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Employee & Email Column Mapping for Batch -->
+          <div class="grid-three-inputs" style="margin-top: 1rem;">
+            <!-- Recipient Email Column Selector -->
+            <div class="form-group">
+              <label for="csv-col-email"><i class="fa-solid fa-envelope text-primary"></i> Columna de Correo <span class="required">*</span></label>
+              <select id="csv-col-email">
+                <option value="">-- Sin envío de correo --</option>
+              </select>
+            </div>
+
+            <!-- Recipient Name Column Selector -->
+            <div class="form-group">
+              <label for="csv-col-name"><i class="fa-solid fa-user text-primary"></i> Columna de Nombre</label>
+              <select id="csv-col-name">
+                <option value="">-- Usar nombre genérico --</option>
+              </select>
+            </div>
+
+            <!-- Employee ID Column Selector -->
+            <div class="form-group">
+              <label for="csv-col-empid"><i class="fa-solid fa-id-badge text-primary"></i> Columna No. Empleado</label>
+              <select id="csv-col-empid">
+                <option value="">-- Igual al contenido QR --</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Email Delivery Options Card -->
+          <div class="email-settings-panel" id="batch-email-panel">
+            <div class="email-settings-header">
+              <label class="custom-toggle">
+                <input type="checkbox" id="batch-enable-email" checked>
+                <span class="toggle-slider"></span>
+              </label>
+              <div class="email-settings-info">
+                <h4><i class="fa-solid fa-paper-plane text-primary"></i> Enviar correos automáticamente al generar los QR</h4>
+                <p>Envía a cada colaborador su QR por correo electrónico con la plantilla oficial de Comedor Gilou.</p>
+              </div>
+            </div>
+            
+            <div class="email-settings-details" id="batch-email-details">
+              <div class="form-group" style="max-width: 280px;">
+                <label for="batch-email-delay"><i class="fa-solid fa-clock"></i> Pausa entre envíos (segundos):</label>
+                <input type="number" id="batch-email-delay" min="1" max="60" value="15">
+                <small class="field-hint">15 segundos recomendado para evitar saturación SMTP en Hostinger.</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Color settings in mapping -->
+          <div class="accordion-header" id="batch-adv-toggle">
+            <span><i class="fa-solid fa-palette"></i> Colores y Diseño del Lote</span>
+            <i class="fa-solid fa-chevron-down arrow-icon"></i>
+          </div>
+          <div class="accordion-content" id="batch-adv-content">
+            <div class="grid-three-inputs">
+              <div class="form-group">
+                <label for="batch-color-dark">Color del QR</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" id="batch-color-dark" value="#000000">
+                  <input type="text" id="batch-color-dark-hex" value="#000000" maxlength="7">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="batch-color-light">Color de Fondo</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" id="batch-color-light" value="#ffffff">
+                  <input type="text" id="batch-color-light-hex" value="#ffffff" maxlength="7">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="batch-qr-margin">Margen (Silencio)</label>
+                <div class="range-wrapper">
+                  <input type="range" id="batch-qr-margin" min="0" max="10" value="4">
+                  <span id="batch-margin-val">4px</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate Action Button -->
+          <div class="mapping-actions">
+            <button id="btn-process-csv" class="btn btn-primary btn-lg">
+              <i class="fa-solid fa-gears"></i> Generar Códigos QR en Lote
+            </button>
+          </div>
+        </div>
+
+        <!-- Processing State (Hidden initially) -->
+        <div class="card card-progress" id="progress-card" style="display: none;">
+          <h2 class="card-title"><i class="fa-solid fa-spinner fa-spin text-primary"></i> Procesando Elementos</h2>
+          <div class="progress-details">
+            <span id="progress-count">Generando: 0 / 0</span>
+            <span id="progress-percent">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+          </div>
+          <p class="progress-eta" id="progress-eta">Calculando tiempo estimado restante...</p>
+          <div class="progress-actions">
+            <button id="btn-cancel-batch" class="btn btn-outline-danger"><i class="fa-solid fa-ban"></i> Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Batch Results Dashboard (Hidden initially) -->
+        <div class="batch-results-wrapper" id="batch-results-card" style="display: none;">
+          
+          <!-- Summary Counters -->
+          <div class="results-stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon bg-primary-soft text-primary">
+                <i class="fa-solid fa-list-ol"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Total Procesado</span>
+                <h3 class="stat-val" id="stat-total-processed">0</h3>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon bg-success-soft text-success">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Generados Correctamente</span>
+                <h3 class="stat-val" id="stat-success-count">0</h3>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon bg-warning-soft text-warning">
+                <i class="fa-solid fa-circle-exclamation"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Omitidos / Vacíos</span>
+                <h3 class="stat-val" id="stat-skipped-count">0</h3>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon bg-success-soft text-success">
+                <i class="fa-solid fa-envelope-circle-check"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Correos Enviados</span>
+                <h3 class="stat-val" id="stat-emails-sent">0</h3>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon bg-danger-soft text-danger">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Fallidos / Pendientes</span>
+                <h3 class="stat-val" id="stat-emails-failed">0</h3>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Results Panel -->
+          <div class="card card-results-gallery">
+            <div class="results-gallery-header">
+              <h2 class="card-title"><i class="fa-solid fa-images text-primary"></i> Vista Previa del Lote</h2>
+              
+              <div class="gallery-actions">
+                <button id="btn-batch-send-emails" class="btn btn-primary" title="Enviar correos a todos los colaboradores del lote">
+                  <i class="fa-solid fa-paper-plane"></i> Enviar Correos a Todos
+                </button>
+                <button id="btn-view-logs-gallery" class="btn btn-outline" title="Ver registro detallado de envíos y diagnóstico de errores">
+                  <i class="fa-solid fa-clipboard-list"></i> Logs / Errores (<span id="gallery-error-count">0</span>)
+                </button>
+                <button id="btn-export-email-log" class="btn btn-outline" title="Descargar archivo CSV con el estatus de envíos">
+                  <i class="fa-solid fa-file-csv"></i> Descargar Reporte CSV
+                </button>
+                <button id="btn-print-labels" class="btn btn-outline">
+                  <i class="fa-solid fa-print"></i> Imprimir Etiquetas
+                </button>
+                <button id="btn-download-zip" class="btn btn-success">
+                  <i class="fa-solid fa-file-zipper"></i> Descargar Lote (.ZIP)
+                </button>
+              </div>
+            </div>
+
+            <!-- QR Grid Output -->
+            <div class="qr-gallery-grid" id="qr-gallery-container">
+              <!-- Rendered items go here dynamically -->
+            </div>
+
+            <!-- Gallery Pagination -->
+            <div class="gallery-pagination" id="gallery-pagination">
+              <button class="btn-icon btn-sm" id="btn-prev-page" title="Página Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+              <span class="pagination-info" id="pagination-text">Página 1 de 1</span>
+              <button class="btn-icon btn-sm" id="btn-next-page" title="Página Siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- Footer Information -->
+    <footer class="app-footer">
+      <p>&copy; 2026 QR Flow | Soluciones RyJ. Envíos gestionados vía servidor local SMTP autenticado con Hostinger.</p>
+    </footer>
+
+  </div>
+
+  <!-- Print Label Modal/Overlay (Clean design for print layout configuration) -->
+  <div id="print-config-modal" class="modal-overlay no-print" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-print text-primary"></i> Configurar Impresión de Etiquetas</h3>
+        <button id="btn-close-modal" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Personaliza la distribución de las etiquetas para imprimirlas directamente en hojas adhesivas A4 o Carta.</p>
+        
+        <div class="form-group">
+          <label for="print-layout-select">Distribución de Etiquetas (Columnas x Filas)</label>
+          <select id="print-layout-select">
+            <option value="3x8">3 columnas x 8 filas (24 etiquetas por hoja - 70x37mm)</option>
+            <option value="4x10" selected>4 columnas x 10 filas (40 etiquetas por hoja - 52.5x29.7mm)</option>
+            <option value="2x5">2 columnas x 5 filas (10 etiquetas por hoja - 105x57mm)</option>
+            <option value="1x1">1 columna (Código de barras/etiquetas individuales de envío)</option>
+          </select>
+        </div>
+
+        <div class="grid-two-inputs">
+          <div class="form-group">
+            <label for="print-label-title">Título de Etiqueta (Ej. Marca o Categoría)</label>
+            <input type="text" id="print-label-title" placeholder="Dejar vacío para omitir título">
+          </div>
+          <div class="form-group">
+            <label for="print-show-text">Mostrar Texto del QR</label>
+            <select id="print-show-text">
+              <option value="yes" selected>Sí, abajo del código</option>
+              <option value="no">No, solo el código QR</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="print-preview-modal-box">
+          <i class="fa-solid fa-file-invoice placeholder-icon"></i>
+          <span>La previsualización final se adaptará a tu impresora al presionar Generar e Imprimir.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-print" class="btn btn-outline">Cancelar</button>
+        <button id="btn-execute-print" class="btn btn-primary"><i class="fa-solid fa-file-pdf"></i> Generar Vista de Impresión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Preview Modal -->
+  <div id="email-preview-modal" class="modal-overlay no-print" style="display: none;">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-envelope-open-text text-primary"></i> Vista Previa del Correo Oficial</h3>
+        <button id="btn-close-email-preview" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="email-meta-header">
+          <div><strong>De:</strong> <span id="preview-from">Sistema de Acceso / Comedor &lt;no-reply@gilou.com.mx&gt;</span></div>
+          <div><strong>Para:</strong> <span id="preview-to">colaborador@multiva.com.mx</span></div>
+          <div><strong>Asunto:</strong> <span id="preview-subject">Tu Código QR de Acceso - Colaborador</span></div>
+          <div><strong>Cco:</strong> <span class="text-muted">contacto@solucionesryj.com.mx, comprasgilou@gmail.com, atencionitsolucionesryj.com.mx</span></div>
+        </div>
+        
+        <div class="email-html-wrapper" id="preview-html-container">
+          <!-- Rendered email iframe or shadow box goes here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-email-preview" class="btn btn-outline">Cerrar</button>
+        <button id="btn-send-from-preview" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> Enviar Este Correo Ahora</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Server Connection Info Modal -->
+  <div id="server-info-modal" class="modal-overlay no-print" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-server text-primary"></i> Servicio de Envío de Correos (Hostinger SMTP)</h3>
+        <button id="btn-close-server-modal" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="server-status-active-view" style="display: none;">
+          <div class="server-active-box">
+            <i class="fa-solid fa-circle-check text-success" style="font-size: 2rem;"></i>
+            <div>
+              <h4 style="color: var(--success); margin-bottom: 4px;">Servicio de Correo Conectado</h4>
+              <p>Los correos se despachan a través del SMTP de Hostinger usando <code>send_email.php</code>.</p>
+            </div>
+          </div>
+          <table class="server-info-table">
+            <tr><td><strong>Servidor SMTP:</strong></td><td id="info-server-host">smtp.hostinger.com:465</td></tr>
+            <tr><td><strong>Usuario / Remitente:</strong></td><td id="info-server-user">no-reply@gilou.com.mx</td></tr>
+            <tr><td><strong>Nombre visible:</strong></td><td id="info-server-sender">Sistema de Acceso / Comedor</td></tr>
+            <tr><td><strong>Pausa entre envíos:</strong></td><td id="info-server-delay">15 segundos</td></tr>
+            <tr><td><strong>Modo de Ejecución:</strong></td><td id="info-server-mode">PHP en Servidor Web (Hostinger / cPanel)</td></tr>
+          </table>
+        </div>
+
+        <div id="server-status-inactive-view">
+          <div class="server-warning-box">
+            <i class="fa-solid fa-cloud-arrow-up text-primary" style="font-size: 2rem;"></i>
+            <div>
+              <h4 style="color: var(--text-main); margin-bottom: 4px;">Configuración en Servidor Web (Hostinger / cPanel)</h4>
+              <p>Para usar la aplicación, asegúrate de tener estos archivos en tu hosting:</p>
+            </div>
+          </div>
+
+          <div style="background-color: var(--bg-input); padding: 1rem; border-radius: var(--border-radius-sm); margin-bottom: 1rem; border: 1px solid var(--border-color); font-size: 0.85rem; line-height: 1.6;">
+            <strong>Archivos requeridos en tu servidor web:</strong><br>
+            📄 <code>index.html</code> (Interfaz de usuario)<br>
+            📄 <code>styles.css</code> (Diseño visual)<br>
+            📄 <code>app.js</code> (Lógica interactiva)<br>
+            🐘 <code>send_email.php</code> (Script de envío SMTP para Hostinger)<br>
+            ⚙️ <code>config/smtp_config.json</code> (Credenciales de correo protegidas)
+          </div>
+
+          <p class="server-help-note">
+            <i class="fa-solid fa-check-circle text-success"></i> 
+            El archivo <code>send_email.php</code> se encarga de enviar los correos conectándose directamente y de manera segura al servidor SMTP de Hostinger.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-retry-server-conn" class="btn btn-primary"><i class="fa-solid fa-rotate"></i> Verificar Estado</button>
+        <button id="btn-close-server-info" class="btn btn-outline">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Logs & Diagnostics Modal -->
+  <div id="email-logs-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <i class="fa-solid fa-clipboard-list text-primary"></i>
+          <h3>Registro de Envíos y Diagnóstico de Errores</h3>
+        </div>
+        <button id="btn-close-logs-modal" class="btn-close-modal" aria-label="Cerrar ventana"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="logs-tabs-bar">
+          <button id="tab-btn-client-logs" class="logs-tab-btn active"><i class="fa-solid fa-clock-rotate-left"></i> Sesión Actual (<span id="session-log-count">0</span>)</button>
+          <button id="tab-btn-server-logs" class="logs-tab-btn"><i class="fa-solid fa-server"></i> Logs del Servidor (email_errors.log)</button>
+        </div>
+        
+        <!-- Tab 1: Client logs list -->
+        <div id="client-logs-view" class="logs-view active">
+          <div class="logs-filter-bar">
+            <div class="filter-group">
+              <button class="filter-btn active" data-filter="all">Todos (<span id="count-all-logs">0</span>)</button>
+              <button class="filter-btn" data-filter="error">Solo Errores (<span id="count-err-logs">0</span>)</button>
+              <button class="filter-btn" data-filter="success">Solo Exitosos (<span id="count-ok-logs">0</span>)</button>
+            </div>
+            <div class="logs-tools">
+              <button id="btn-copy-client-logs" class="btn btn-sm btn-outline"><i class="fa-solid fa-copy"></i> Copiar</button>
+              <button id="btn-download-client-logs" class="btn btn-sm btn-outline"><i class="fa-solid fa-download"></i> Descargar .txt</button>
+              <button id="btn-clear-client-logs" class="btn btn-sm btn-outline text-danger"><i class="fa-solid fa-trash"></i> Limpiar</button>
+            </div>
+          </div>
+          <div id="logs-container" class="logs-entries-list">
+            <div class="empty-logs">No hay eventos de envío registrados aún en esta sesión.</div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Server logs file view -->
+        <div id="server-logs-view" class="logs-view" style="display: none;">
+          <div class="logs-filter-bar">
+            <span class="server-log-path"><i class="fa-solid fa-file-lines"></i> <code>email_errors.log</code> &bull; <code>send_qr_emails.log</code></span>
+            <div class="logs-tools">
+              <button id="btn-refresh-server-logs" class="btn btn-sm btn-primary"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+              <button id="btn-copy-server-logs" class="btn btn-sm btn-outline"><i class="fa-solid fa-copy"></i> Copiar</button>
+            </div>
+          </div>
+          <pre id="server-logs-content" class="server-logs-pre">Cargando logs del servidor...</pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-logs-modal-footer" class="btn btn-outline">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Sheet Container (Only visible during printing, populated dynamically) -->
+  <div id="print-sheet-container" class="print-only">
+    <!-- Populated by JavaScript and styled via styles.css @media print -->
+  </div>
+
+  <!-- External JavaScript Libraries via CDN -->
+  <!-- PapaParse for parsing CSV -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- JSZip for generating ZIP files -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- FileSaver.js for downloading files -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <!-- QRCode.js (Soldair) for generating high quality QR codes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.min.js"></script>
+
+  <!-- Application Logic -->
+  <script src="app.js?v=3.0"></script>
+</body>
+</html>

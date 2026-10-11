@@ -1,0 +1,12 @@
+{
+    "smtp_server": "smtp.hostinger.com",
+    "smtp_port": 465,
+    "use_tls": false,
+    "use_ssl": true,
+    "smtp_user": "tu_correo@tudominio.com",
+    "smtp_password": "tu_password_aqui",
+    "sender_name": "Sistema de Acceso / Comedor",
+    "sender_email": "tu_correo@tudominio.com",
+    "subject": "Tu Código QR de Acceso - {nombre}",
+    "qr_dir": "qr"
+}

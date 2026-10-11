@@ -1,0 +1,17 @@
+# Configuración con credenciales y contraseñas sensibles
+config/smtp_config.json
+smtp_config.json
+
+# Archivos de registro y logs
+*.log
+email_errors.log
+send_qr_emails.log
+
+# Archivos generados dinámicamente y respaldos
+*.csv.failed.csv
+.DS_Store
+Thumbs.db
+
+GUILLES.code-workspace
+qr.code-workspace
+*.py
