@@ -25,12 +25,9 @@ $config = [
     'smtp_server' => 'smtp.hostinger.com',
     'smtp_port' => 465,
     'use_ssl' => true,
-    #'smtp_user' => 'no-reply@gilou.com.mx',
-    #'smtp_password' => 'wZHw7yf!>?iTiF',
     'sender_name' => 'Sistema de Acceso / Comedor',
     'sender_email' => 'no-reply@gilou.com.mx',
     'subject' => 'Tu Código QR de Acceso - {nombre}',
-    //'bcc_emails' => 'contacto@solucionesryj.com.mx, comprasgilou@gmail.com, atencionitsolucionesryj.com.mx',
     'qr_dir' => 'qr'
 ];
 
